@@ -1,19 +1,13 @@
-# Pix2Pix Timbre Transfer
-Music Separated Speech Enhancement using Image Translation 
+# Music Separated Speech Enhancement using Image Translation 
  
 # Table of contents
 
 * [Introduction](#introduction)
-* [Quick reference](#quick-reference)
-* [Methodology](#methodology)
 * [Dataset](#dataset)
+* [Method](#method)
 * [Training](#training)
 * [Results](#results)
 * [Conclusion](#conclusion)
-* [Future work](#future-work)
-* [Acknowledgements](#acknowledgements)
-* [Contact](#contact)
-* [License](#license)
 
 # Introduction
 >[Table of contents](#table-of-contents)
@@ -156,7 +150,7 @@ $ python predict_multitarget.py --model <GENERATOR_WEIGHTS>
                                 --output <OUTPUT_AUDIO>
 ```
 
-# Methodology
+# Method
 >[Table of contents](#table-of-contents)
 
 The Pix2Pix architecture has been designed for image processing tasks, but in this case the format of the data is audio. Therefore, a preprocessing step to convert a 1D signal (audio) into a 2D signal (image) is required.
