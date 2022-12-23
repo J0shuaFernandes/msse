@@ -8,6 +8,7 @@
 * [Training](#training)
 * [Results](#results)
 * [Conclusion](#conclusion)
+* [References](#references)
 
 # Introduction
 >[Table of contents](#table-of-contents)
@@ -464,89 +465,13 @@ $ python predict_multitarget.py --model <GENERATOR_WEIGHTS>
 
 The system presented in this work can perform the Timbre Transfer problem and achieve reasonable results. However, it is obvious that this system has some limitations and that the results are still far from being usable in a professional music production environment. In this section, the [Results](#results) presented above are discussed.
 
-### Audios from the dataset
-
-The [audios from the dataset](#audios-from-the-dataset) are analyzed here according to the intermediate and final results. For this, the epochs 1, 50 and 100 are considered. 
-
-The first training epochs sound like an interpolation between the original instrument and the target, but present very noticeable distortion that is not pleasurable for the listener. This is specially true in the case of ``keyboard_acoustic_2_string_acoustic``. 
-
-In the epoch 50, the output sounds similar to the target with still notable artifacts. The models have learned characteristics from the target instrument that are present in the output. For example, the model ``keyboard_acoustic_2_guitar_acoustic`` introduces the sound of the guitar strings even in places where the original melody from the keyboard does not produce such noises. Also, in the case of ``keyboard_acoustic_2_synth_lead_synthetic``, the output sound presents the high frequency harmonics sustained for a longer period of time than in the original melody. 
-
-The results from the epoch 50 to the epoch 100 have minimal changes, but the perceptual implications of them are noticeable. In all cases, some of the undesired noises and distortions from earlier training epochs are reduced. As a result, the output sound is perceptually more natural, but still presents significant artifacts when compared to the ground truth target.
-
-### Audios from the real world
-
-Due to the limited instrument diversity during training (only one type of keyboard), a subjective listenting test on the [audios from the real world](#audios-from-the-real-world) reveals that the same instrument recorded in a different setting can also present a challenging scenario. That being said, the generalization of the networks allow for performing the Timbre Transfer operation from real world pianos into the 3 instruments considered in this work. 
-
-Artifacts appear specially when there are multiple notes being played at once and when there are sudden intensity changes. In general, the target instrument can be recognized and the audio quality is reasonably similar to the output audios from the dataset. 
-
-Further research applying one or more proposals from the section [Future work](#future-work) may be required to refine the results.
-
 <!-- ### Generator only vs Fixed vs Conditioned
 The most interesting finding is that the comparison between the models over the dataset leads to the *generator only* model to achive the best performance. This in possibly due to overfitting, since the instrument diversity is very limited. In a real application, the best performance is always achieved by the *conditioned* model. -->
 
-# Future work
->[Table of contents](#table-of-contents)
-
-There are some aspects of this work which have a considerable margin for improvement with further research. In this section, the author’s intention is to highlight some of the main lines to be followed in the future in the hope that they will help the research in this field. 
-
-### Diversity of instruments
-
-As mentioned in the section [Dataset](#dataset), the single notes contained in the NSynth Dataset were used to synthesize the audios. In particular, the entire training has been performed using the note quality 0 (bright) of each instrument pair. However, it may be interesting to experiment with other note qualities. 
-
-Another way could be to create a custom dataset with the same structure as NSynth using a SoundFont synthesizer for each new instrument (.sf, .sf2 files).
-
-### Data augmentations
-
-Generate different versions of the audios by changing synthesis parameters, transposition, tempo, note length, etc.  or applying audio effects used in professional audio productions such as Reverb, EQ or Delay. 
-
-Alternatively, consider using the MAESTRO Dataset as mentioned in the section [Dataset](#dataset) if you have more time and resources for your research.
-
-### Conditional architecture (any_2_any)
-
-The scope of this project has been limited to explore 3 instrument pairs, having only one pair fixed for each model. In other words, the model converts a specific origin into a specific target and cannot perform the timbre transfer operation properly if the origin or target instruments change. 
-
-The any_2_any architecture would aim to be instrument-independent and achieve comparable performance in the Timbre Transfer problem.
-
 # Acknowledgements
->[Table of contents](#table-of-contents)
-
-I would like to thank Carlos from the [YouTube channel DotCSV](https://www.youtube.com/channel/UCy5znSnfMsDwaLlROnZ7Qbg/videos) for organizing the [Pix2Pix challenge](https://www.youtube.com/watch?v=BNgAaCK920E) and elaborating a [tutorial on how to implement and train this architecture](https://www.youtube.com/watch?v=YsrMGcgfETY). The code and the tutorial were used as a starting point and adapted to the problem needs. Also, special mention to NVIDIA Corporation for providing the prize as a sponsorship for the challenge. 
-
-The challenge has been a major motivation to do this research on the topic of Timbre Transfer and develop this code. Regardless of the outcome of the challenge, I hope this work to be helpful in some way in further Machine Listening research.  
+>[Table of contents](#table-of-contents)  
 
 Finally, thank you to various faculty members from the [Music Technology Group (MTG) at Universitat Pompeu Fabra](https://www.upf.edu/web/mtg) in Barcelona (Spain) for their valuable feedback and continuous support to my career since I was an undergraduate student there.
 
-# Contact
+# References
 >[Table of contents](#table-of-contents)
-
-Please do not hesitate to reach out to me if you find any issue with the code or if you have any questions. 
-* Personal email: hmartelb@hotmail.com
-* LinkedIn profile: https://www.linkedin.com/in/hmartelb/
-
-# License
->[Table of contents](#table-of-contents)
-
-```
-MIT License
-
-Copyright (c) 2019 Héctor Martel
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
