@@ -13,35 +13,9 @@
 # Introduction
 >[Table of contents](#table-of-contents)
 
-### What is music separated speech?
+Source separation can be defined as the process of separating a set of source signals from a set of mixed signals. Source separation for music is the process of separating music multiple sources of music, which can be vocals, drums, bass, etc. 'Music Separated Speech' is speech that has been separated from music. When speech is separated from background music, it usually contains certain artifacts. 
 
-'Music Separated Speech' can be defined as speech that has been separated by music.    
-
-#### Examples
-
-The best way to understand the problem is to listen to some audio examples. 
-
-In particular, the 4 from the ``/docs/examples`` folder of this repository should provide an idea and are the ones that will be used thoughout this documentation. 
-
-[Keyboard acoustic](https://drive.google.com/open?id=16SWVM3JSN_PM6pcNvPzWbiUYZs328u8F)
-[Guitar acoustic](https://drive.google.com/open?id=1hGWHfV03yok2NSfXipK7KDVp9kTbUbjH)
-[String acoustic](https://drive.google.com/open?id=1mpaovd5T2IaXee2CyOWrUXEXRHg64LeB)
-[Synth Lead synthetic](https://drive.google.com/open?id=1VKfm4iGLnDPLn3BZ14yAcv5wFA6-bMms)
---- | --- | --- | ---
-
->To make listening easier while viewing this documentation, the reader can access them from the above links to Google Drive, where they are stored
-
-#### A visual example
-
-The following table shows one STFT spectrogram frame of the same melody from the above examples, played by the 4 different instruments considered in this work. These images serve as input and output for the Pix2Pix network. 
-> A more detailed explanation about spectrograms can be found in section [Methodology](#methodology).
-
-<img src="docs/examples/keyboard_acoustic.png" width="200" height="200"> | <img src="docs/examples/guitar_acoustic.png" width="200" height="200"> | <img src="docs/examples/string_acoustic.png" width="200" height="200"> | <img src="docs/examples/synth_lead_synthetic.png" width="200" height="200"> 
---- | --- | --- | ---
-Keyboard acoustic | Guitar acoustic | String acoustic | Synth Lead synthetic
-
-#### Scope of the project
-The objective of this project is to train a network that is able to perform image translation between any instrument pair of this set. For simplicity, the Keyboard is considered the canonical instrument such that the translations presented here have Keyboard as origin and any of the remaining 3 as target. 
+In this project, we first create a dataset using a subject of the LJ Dataset. We add music to the recordings and pass them through spleeter which is a music source separator. We then use apply image translation to mel-spectrograms where we predict a clean mel-spectrogram from that of a separated one. Once that's done, we use the MelGAN vocoder, which has been trained on the LJ dataset, to generate raw audio.
 
 # Quick reference
 >[Table of contents](#table-of-contents)
@@ -93,37 +67,6 @@ $ python train.py --dataset_path <DATASET_PATH>
                  [--findlr <FINDLR>]
 ```
 
-### Conditioned Pix2Pix training (multitarget)
-The ``train_multitarget.py`` script allows for multitarget training instead of a fixed instrument pair. This means that the same origin can be conditioned to obtain a different target by having an additional input. To use it, specify the origin, a list of targets, and the path where the dataset is located. 
-```
-$ python train_multitarget.py --dataset_path <DATASET_PATH> 
-                              --origin <ORIGIN>
-                              --target <LIST_OF_TARGETS>
-                             [--gpu <GPU>] 
-                             [--epochs <EPOCHS>]
-                             [--epoch_offset <EPOCH_OFFSET>] 
-                             [--batch_size <BATCH_SIZE>]
-                             [--gen_lr <GENERATOR_LEARNING_RATE>] 
-                             [--disc_lr <DISCRIMINATOR_LEARNING_RATE>]
-                             [--validation_split <VALIDATION_SPLIT>] 
-                             [--findlr <FINDLR>]
-```
-
-### Generator only training
-It is also possible to train only the generator network with the ``train_generator.py`` script, specifying the instrument pair to convert from origin to target, and the path where the dataset is located. 
-```
-$ python train_generator.py --dataset_path <DATASET_PATH> 
-                            --origin <ORIGIN>
-                            --target <TARGET>
-                           [--gpu <GPU>] 
-                           [--epochs <EPOCHS>]
-                           [--epoch_offset <EPOCH_OFFSET>] 
-                           [--batch_size <BATCH_SIZE>]
-                           [--lr <LEARNING_RATE>] 
-                           [--validation_split <VALIDATION_SPLIT>] 
-                           [--findlr <FINDLR>]
-```
-
 ### Using a pretrained model
 
 The ``/models`` folder of this repository contains the training history and the learning rate search results in separate directories for each instrument pair.
@@ -141,14 +84,6 @@ To use a pretrained model simply run the ``predict.py`` script specifying the pa
 $ python predict.py --model <GENERATOR_WEIGHTS> 
                     --input <INPUT_AUDIO>
                     --output <OUTPUT_AUDIO>
-```
-
-Additionally, in the case of a multitarget model the style must be specified. Run the ``predict_multitarget.py`` script instead.
-```
-$ python predict_multitarget.py --model <GENERATOR_WEIGHTS> 
-                                --input <INPUT_AUDIO>
-                                --style <TARGET_STYLE_AUDIO>
-                                --output <OUTPUT_AUDIO>
 ```
 
 # Method
@@ -172,51 +107,6 @@ Top: Time domain (Waveform), Bottom: Frequency domain (Spectrogram, STFT)
 The spectrograms are computed from the audios using the ``librosa.stft()`` function with a Hanning window of size 1024 and an overlap of 50% (hop size of 512), which gives a resolution of 513 frequency bins. The Sampling Rate of the input audio is 44.1kHz. These parameters have been found to provide a reasonable time-frequency compromise for this application. 
 
 >The original Sampling Rate of 16kHz of the NSynth dataset makes the spectrograms have no content above 8kHz, according to the [Nyquist-Shannon sampling theorem](https://en.wikipedia.org/wiki/Nyquist–Shannon_sampling_theorem). Since the spectrograms are computed up to 22.05kHz in this case, as we use a Sampling Rate of 44.1kHz for professional audio, it is safe to trim one half of the image corresponding to High Frequencies because there is no content (i.e. the magnitude is all zeros in this region).
-
-### Forward pass
-
-Strictly speaking, the values of the Spectrogram returned by the STFT operation are complex numbers. Therefore, for the network to process the data it needs to be decomposed further. The magnitude of the signal is the modulus of Spectrogram, namely ``np.abs(S)`` and the phase of the signal is the angle, obtained as ``np.angle(S)``. 
-
-The component that carries the most relevant information is the magnitude, and it is the only one passed to the network, as shown in the following diagrams:
-
-### Fixed instrument pair
-The network performs the timbre transfer operation in a fixed instrument pair setting. The task is to learn the differences between a given origin and target and apply it to the input to generate the prediction. This means that the origin and target instruments are always expected to be the same and the input audio is converted from origin to target. 
-
-<p align="center">
-<img src="docs/Pix2Pix Timbre Transfer.png" width="960" height="391">
-</p>
-<p align="center">
-Diagram of the end-to-end audio processing pipeline for a fixed instrument pair. 
-<br>
-The STFT and iSTFT correspond to the forward and inverse Short Time Fourier Transforms respectively. The magnitude is processed at the Pix2Pix block, which returns a magnitude estimation as output. The phase is processed at the Phase estimator block, with one of the implementations <a href="#reconstructing-the-audio">discussed below</a>.   
-</p>
-
-### Multitarget
-The proposed setting is similar to the neural style transfer problem. Instead of having a fixed transformation, the network is conditioned to generate any instrument of the user’s choice. This is achieved by passing random notes played by the target instrument as an additional input. The task is not just to perform a predetermined transformation, but to analyze input and target simultaneously to generate the prediction. 
-
-<p align="center">
-<img src="docs/Pix2Pix Timbre Transfer Multitarget.png" width="960" height="552">
-</p>
-<p align="center">
-Diagram of the end-to-end audio processing pipeline for the conditioned multitarget model. 
-<br>
-The Pix2Pix block now receives 2 magnitude inputs to generate a magnitude with the content of the input audio as played by the instrument in style target audio. 
-</p>
-
-### Reconstructing the audio
-
-Both magnitude and phase are required to reconstruct the audio from a Spectrogram, so we need to estimate the phase in some way.
-
-Generating flat or random phases does not produce a decent result. Therefore, a more sophisticated phase estimation method is also necessary. The following can be implemented in the “Phase estimator” block as possible solutions: 
-
-1. [Griffin-Lim algorithm](https://pdfs.semanticscholar.org/14bc/876fae55faf5669beb01667a4f3bd324a4f1.pdf)
-2. [Reconstruction using the input phase](https://posenhuang.github.io/papers/DRNN_ISMIR2014.pdf) (the phase estimator is the identity function, commonly used in audio source separation)
-3. Use another Pix2Pix network to learn the phase
-4. Pass magnitude and phase as 2 channels to a single Pix2Pix network
-
-Some authors from the research literature claim that (1) may not converge into an acceptable result for this particular problem [i, ii], and any of the proposals in (3,4) are error prone since they will likely produce inconsistent spectrograms that are not invertible into a time-domain signal [ii, iii]. 
-
-Consequently, (2) has been chosen for being the one with less computational cost, less error prone, and best perceptual output quality.
 
 > References of this section
 > * i - [TimbreTron: A WaveNet(CycleGAN(CQT(Audio))) Pipeline for Musical Timbre Transfer](https://arxiv.org/pdf/1811.09620.pdf)
@@ -465,13 +355,11 @@ $ python predict_multitarget.py --model <GENERATOR_WEIGHTS>
 
 The system presented in this work can perform the Timbre Transfer problem and achieve reasonable results. However, it is obvious that this system has some limitations and that the results are still far from being usable in a professional music production environment. In this section, the [Results](#results) presented above are discussed.
 
-<!-- ### Generator only vs Fixed vs Conditioned
-The most interesting finding is that the comparison between the models over the dataset leads to the *generator only* model to achive the best performance. This in possibly due to overfitting, since the instrument diversity is very limited. In a real application, the best performance is always achieved by the *conditioned* model. -->
 
 # Acknowledgements
 >[Table of contents](#table-of-contents)  
 
-Finally, thank you to various faculty members from the [Music Technology Group (MTG) at Universitat Pompeu Fabra](https://www.upf.edu/web/mtg) in Barcelona (Spain) for their valuable feedback and continuous support to my career since I was an undergraduate student there.
+I'd like to thank
 
 # References
 >[Table of contents](#table-of-contents)
