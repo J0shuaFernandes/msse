@@ -3,6 +3,7 @@
 # Table of contents
 
 * [Introduction](#introduction)
+* [Quick Reference](#quick-reference)
 * [Dataset](#dataset)
 * [Method](#method)
 * [Training](#training)
@@ -67,18 +68,14 @@ $ python train.py --dataset_path <DATASET_PATH>
                  [--findlr <FINDLR>]
 ```
 
-# Method
->[Table of contents](#table-of-contents)
-
-The Pix2Pix architecture has been designed for image processing tasks, but in this case the format of the data is audio. Therefore, a preprocessing step to convert a 1D signal (audio) into a 2D signal (image) is required.
-
-
 # Dataset
 >[Table of contents](#table-of-contents)
 
-Given the description of the problem, the dataset must contain the same audios played by different instruments. Unfortunately, this is very complex to achieve with human performances because of time alignment, note intensity differences, or even instrument tuning changes due to their physical construction. 
+The dataset has been creating using a subset for the LJ dataset and can be downloaded here. 
 
-For this reason, the audios of the dataset have been synthesized from MIDI files to obtain coherent and reliable data from different instruments. By doing this we ensure that the only change between two audios is the timbre, although this has its own limitations. 
+takes in audio files and creates a dataset
+the dataset contains '.pickle' files where each
+file contains an input and target mel-spectrogram 
 
 ### Dataset download
 
@@ -87,6 +84,11 @@ The dataset has been created using a combination of two publicly available datas
 * Classical Music MIDI, from Kaggle: https://www.kaggle.com/soumikrakshit/classical-music-midi
 
 * The NSynth Dataset, “A large-scale and high-quality dataset of annotated musical notes”, Magenta Project (Google AI): https://magenta.tensorflow.org/datasets/nsynth
+
+# Method
+>[Table of contents](#table-of-contents)
+
+The Pix2Pix architecture has been designed for image processing tasks, but in this case the format of the data is audio. Therefore, a preprocessing step to convert a 1D signal (audio) into a 2D signal (image) is required.
 
 # Training
 >[Table of contents](#table-of-contents)
