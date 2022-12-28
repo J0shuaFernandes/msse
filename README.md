@@ -9,6 +9,7 @@
 * [Training](#training)
 * [Results](#results)
 * [Conclusion](#conclusion)
+* [Acknowledgements](#acknowledgements)
 * [References](#references)
 
 # Introduction
@@ -76,14 +77,6 @@ The dataset has been creating using a subset for the LJ dataset and can be downl
 takes in audio files and creates a dataset
 the dataset contains '.pickle' files where each
 file contains an input and target mel-spectrogram 
-
-### Dataset download
-
-The dataset has been created using a combination of two publicly available datasets:
-
-* Classical Music MIDI, from Kaggle: https://www.kaggle.com/soumikrakshit/classical-music-midi
-
-* The NSynth Dataset, “A large-scale and high-quality dataset of annotated musical notes”, Magenta Project (Google AI): https://magenta.tensorflow.org/datasets/nsynth
 
 # Method
 >[Table of contents](#table-of-contents)
