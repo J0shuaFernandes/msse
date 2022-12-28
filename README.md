@@ -67,51 +67,11 @@ $ python train.py --dataset_path <DATASET_PATH>
                  [--findlr <FINDLR>]
 ```
 
-### Using a pretrained model
-
-The ``/models`` folder of this repository contains the training history and the learning rate search results in separate directories for each instrument pair.
-
-Since the weights of the trained models are too large for the Github repository, [this alternative link to Google Drive](https://drive.google.com/open?id=1baKYIA3uurrXkh1V0-fMWkgvW4iEWJh8) is provided. 
-
-Individual models
-* [keyboard_acoustic_2_guitar_acoustic](https://drive.google.com/open?id=1wD9jHDkwMSaPQeCpM6UxnOQfh-C52pI0) 
-* [keyboard_acoustic_2_string_acoustic](https://drive.google.com/open?id=1TUMI0NK9hP26BqiQUAqNa7woHJ23JoME)
-* [keyboard_acoustic_2_synth_lead_synthetic](https://drive.google.com/open?id=1LuriwjzxN3C5SJzeDFZllEOMtjZcUDYf)
-* [keyboard_acousitc_2_any](https://drive.google.com/open?id=15qzaeFJ_vpRqPR_kevyOLIKobWQ6xhqC)
-
-To use a pretrained model simply run the ``predict.py`` script specifying the path to the trained generator model (i.e. .h5 weights file), the location of the input audio and the name of the output audio.
-```
-$ python predict.py --model <GENERATOR_WEIGHTS> 
-                    --input <INPUT_AUDIO>
-                    --output <OUTPUT_AUDIO>
-```
-
 # Method
 >[Table of contents](#table-of-contents)
 
 The Pix2Pix architecture has been designed for image processing tasks, but in this case the format of the data is audio. Therefore, a preprocessing step to convert a 1D signal (audio) into a 2D signal (image) is required.
 
-### Obtaining a Time-Frequency representation
-
-Audio applications using Machine Learning typically work better in Frequency domain than in Time domain. If an appropriate time-frequency transform, like the Short Time Fourier Transform (STFT) is applied to the time domain signal, the result is a 2D representation called a Spectrogram where the axes correspond to time (horizontal) and frequency (vertical).  
-
-<p align="center">
-<img src="docs/keyboard_acoustic_waveform_and_spectrogram.png" width="960" height="343">
-</p>
-<p align="center">
-Example of the Keyboard visualized in Adobe Audition.
-<br>
-Top: Time domain (Waveform), Bottom: Frequency domain (Spectrogram, STFT)
-</p>
-
-The spectrograms are computed from the audios using the ``librosa.stft()`` function with a Hanning window of size 1024 and an overlap of 50% (hop size of 512), which gives a resolution of 513 frequency bins. The Sampling Rate of the input audio is 44.1kHz. These parameters have been found to provide a reasonable time-frequency compromise for this application. 
-
->The original Sampling Rate of 16kHz of the NSynth dataset makes the spectrograms have no content above 8kHz, according to the [Nyquist-Shannon sampling theorem](https://en.wikipedia.org/wiki/Nyquist–Shannon_sampling_theorem). Since the spectrograms are computed up to 22.05kHz in this case, as we use a Sampling Rate of 44.1kHz for professional audio, it is safe to trim one half of the image corresponding to High Frequencies because there is no content (i.e. the magnitude is all zeros in this region).
-
-> References of this section
-> * i - [TimbreTron: A WaveNet(CycleGAN(CQT(Audio))) Pipeline for Musical Timbre Transfer](https://arxiv.org/pdf/1811.09620.pdf)
-> * ii - [Signal Reconstruction from STFT magnitude: A state of the art](http://recherche.ircam.fr/pub/dafx11/Papers/27_e.pdf)
-> * iii - [Phase Processing for Single-Channel Speech Enhancement](http://www.jonathanleroux.org/pdf/Gerkmann2015SPM03.pdf)
 
 # Dataset
 >[Table of contents](#table-of-contents)
@@ -186,48 +146,9 @@ After some inconclusive experiments setting the batch size to 1, 2 and 4, the be
 
 The learning rate has been searched using the Learning Rate Finder method mentioned in [this blog post from Towards Data Science](https://towardsdatascience.com/estimating-optimal-learning-rate-for-a-deep-neural-network-ce32f2556ce0) and [this paper](https://arxiv.org/pdf/1506.01186.pdf). 
 
-The search was performed separately for the generator, the discriminator and the joint adversarial system. The best learning rate is not the lowest loss, but the one with the steepest slope. This example shows the results for keyboard_acoustic_2_guitar_acoustic: 
-
-<img src="docs/training/LRFinder_gen_mae.png" width="250" height="250"> | <img src="docs/training/LRFinder_disc_loss.png" width="250" height="250"> | <img src="docs/training/LRFinder_gen_loss.png" width="250" height="250"> 
---- | --- | --- 
-Generator MAE | Discriminator loss | Joint GAN loss
-
-Not only the learning rate has been found to be orders of magnitude lower than expected, but also different for the Generator and the Discriminator depending on the instrument pair. The optimal values found with this method are the following: 
-
-Origin | Target | Generator LR | Discriminator LR
---- | --- | --- | ---
-keyboard_acoustic | guitar_acoustic | 5e-5 | 5e-6
-keyboard_acoustic | string_acoustic | 1e-5 | 1e-5
-keyboard_acoustic | synth_lead_synthetic | 1e-4 | 1e-5
-keyboard_acoustic | any | 1e-5 | 5e-6
-
 ### Training phase
 
-The training history is displayed below for the 100 training epochs, using all the instrument pairs with keyboard_acoustic as origin.  
-
-#### keyboard_acoustic_2_guitar_acoustic
-<img src="docs/training/keyboard_acoustic_2_guitar_acoustic/gen_mae_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_guitar_acoustic/disc_loss_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_guitar_acoustic/gen_loss_history.png" width="250" height="250"> 
---- | --- | --- 
-Generator MAE | Discriminator loss | Joint GAN loss
-(best = 0.0192, last = 0.0192) | (best = 1.3131, last = 1.3708)  | (best = 2.6338, last = 2.6338) 
-
-#### keyboard_acoustic_2_string_acoustic
-<img src="docs/training/keyboard_acoustic_2_string_acoustic/gen_mae_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_string_acoustic/disc_loss_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_string_acoustic/gen_loss_history.png" width="250" height="250"> 
---- | --- | --- 
-Generator MAE | Discriminator loss | Joint GAN loss
-(best = 0.0553, last = 0.0553) | (best = 0.6853, last = 1.0921)  | (best = 6.4461, last = 6.5735) 
-
-#### keyboard_acoustic_2_synth_lead_synthetic
-<img src="docs/training/keyboard_acoustic_2_synth_lead_synthetic/gen_mae_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_synth_lead_synthetic/disc_loss_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_synth_lead_synthetic/gen_loss_history.png" width="250" height="250"> 
---- | --- | --- 
-Generator MAE | Discriminator loss | Joint GAN loss
-(best = 0.0222, last = 0.0225) | (best = 1.3097, last = 1.3426)  | (best = 2.9503, last = 2.9925) 
-
-#### keyboard_acoustic_2_any
-<img src="docs/training/keyboard_acoustic_2_any/gen_mae_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_any/disc_loss_history.png" width="250" height="250"> | <img src="docs/training/keyboard_acoustic_2_any/gen_loss_history.png" width="250" height="250"> 
---- | --- | --- 
-Generator MAE | Discriminator loss | Joint GAN loss
-(best = 0.0437, last = 0.0437) | (best = 1.0173, last = 1.2794)  | (best = 5.1990, last = 5.2048) 
+The training history is displayed below for the 100 training epochs, using all the instrument pairs with keyboard_acoustic as origin.   
 
 # Results
 >[Table of contents](#table-of-contents)
@@ -236,119 +157,6 @@ The numeric value of the loss can serve as a performance metric during training,
 
 At the end of every training epoch the same audio file has been used to generate a spectrogram frame and the corresponding audio with the target timbre. 
 
-### Visualizations
-
-#### keyboard_acoustic_2_guitar_acoustic
-<img src="docs/results/keyboard_acoustic_2_guitar_acoustic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_guitar_acoustic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_guitar_acoustic/spectrogram_true.png" width="200" height="200"> 
---- | --- | ---
-Input spectrogram | Prediction over 100 epochs | True target
-
-#### keyboard_acoustic_2_string_acoustic
-<img src="docs/results/keyboard_acoustic_2_string_acoustic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_string_acoustic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_string_acoustic/spectrogram_true.png" width="200" height="200"> 
---- | --- | ---
-Input spectrogram | Prediction over 100 epochs | True target
-
-#### keyboard_acoustic_2_synth_lead_synthetic
-<img src="docs/results/keyboard_acoustic_2_synth_lead_synthetic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_synth_lead_synthetic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_synth_lead_synthetic/spectrogram_true.png" width="200" height="200"> 
---- | --- | ---
-Input spectrogram | Prediction over 100 epochs | True target
-
-#### keyboard_acoustic_2_any
-| <img src="docs/results/keyboard_acoustic_2_any/guitar_acoustic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_any/guitar_acoustic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_any/guitar_acoustic/spectrogram_true.png" width="200" height="200"> |
-| --- | --- | --- |
-| <img src="docs/results/keyboard_acoustic_2_any/string_acoustic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_any/string_acoustic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_any/string_acoustic/spectrogram_true.png" width="200" height="200"> |
-| <img src="docs/results/keyboard_acoustic_2_any/synth_lead_synthetic/spectrogram_input.png" width="200" height="200"> | <img src="docs/results/keyboard_acoustic_2_any/synth_lead_synthetic/prediction.gif" width="340" height="256"> | <img src="docs/results/keyboard_acoustic_2_any/synth_lead_synthetic/spectrogram_true.png" width="200" height="200"> |
-Input spectrogram | Prediction over 100 epochs | True target
-
-### Audios from the dataset
-
-The following tables are provided to listen to the results one by one. The results are conformed by 6 samples, which are displayed in terms of Input, Output and Target. 4 samples are from the Training set and 2 from the Validation set. 
-
->NOTE: It is highly recommended to donwload the ``test_results`` folder from [this Google Drive link](https://drive.google.com/open?id=1wuha0W6TY2Mi4PX7mPe54ECnM6DWZNmL) to get all the audios at once. 
-
-#### keyboard_acoustic_2_guitar_acoustic
-
-| Sample name | Set | Input | Output | Target |
-| --- | --- | --- | --- | --- |
-| appass_3.wav | Training | [Listen](https://drive.google.com/open?id=1gmQ8V9wFbAUAV5AM8QkxqoxOVLPbUfw8) | [Listen](https://drive.google.com/open?id=1HKf9dfWImJ-e0eT-dw1bbKsq8VC4nf4g) | [Listen](https://drive.google.com/open?id=1SQxxC2dRu91mx73j8MSMERIgUnx7kVsl)|
-| burg_gewitter.wav | Training | [Listen](https://drive.google.com/open?id=15rYy8qL_gp3rLF_4fm-QRuih3MTCofXl) | [Listen](https://drive.google.com/open?id=1V-joXpcqsWtF4S-L51OywUlmto_tdyxV) | [Listen](https://drive.google.com/open?id=1IYVbk7IyixIiH0uFRrw_S_ZrmXjIuC1R)|
-| debussy_cc_1.wav | Training | [Listen](https://drive.google.com/open?id=17fyumtCSC1og2rvgmik4mbKMPNHBK3L7) | [Listen](https://drive.google.com/open?id=1TKsxTnPFC4ODEz4FI0ipF-oOYPE9FzZG) | [Listen](https://drive.google.com/open?id=1UFg2Ac9Rd7GO7tsFEmlVfMUspMebEhm0)|
-| mond_3.wav | Training | [Listen](https://drive.google.com/open?id=1gEWUmFas2Hvr0aEyEo0H9bKoJINFCNpX) | [Listen](https://drive.google.com/open?id=1aXPDbh5kBd88sbuPNjeHFGJEs8KfYBiq) | [Listen](https://drive.google.com/open?id=1rQb34Ok4O_lv7cQuuy1pZeoYIQnbT8zj)|
-| schuim-3.wav | Validation | [Listen](https://drive.google.com/open?id=1lPyfKD916xSjYPQrCllJl8J2ir5pRnX9) | [Listen](https://drive.google.com/open?id=14ASh1EdKSbs92_tloGFw_0hxe7uZT-v5) | [Listen](https://drive.google.com/open?id=1UUtlogIO8Da5z5a-hr7mTe6ROcR5-qT5)|
-| ty_august.wav | Validation | [Listen](https://drive.google.com/open?id=1J0fdHTbFtkdArBwKArVJ4V72MR_IZlHO) | [Listen](https://drive.google.com/open?id=1xVc3i3l-9B1oaJU9XBl4wgU677AO04kP) | [Listen](https://drive.google.com/open?id=1RArFTlrJxr4dYpyi8U8HXf_lasMAgG11)|
-
-#### keyboard_acoustic_2_string_acoustic
-
-| Sample name | Set | Input | Output | Target |
-| --- | --- | --- | --- | --- |
-| appass_3.wav | Training | [Listen](https://drive.google.com/open?id=1gmQ8V9wFbAUAV5AM8QkxqoxOVLPbUfw8) | [Listen](https://drive.google.com/open?id=1aBS-AuphnoRmlYXRo2bHelujrskQTNDj) | [Listen](https://drive.google.com/open?id=1N9fPbd5Zro_jNDD6JXk-WTC6wBbd97zY)|
-| burg_gewitter.wav | Training | [Listen](https://drive.google.com/open?id=15rYy8qL_gp3rLF_4fm-QRuih3MTCofXl) | [Listen](https://drive.google.com/open?id=1JSS-52WLzqbWwkudZZrRa527aiKG6sff) | [Listen](https://drive.google.com/open?id=1vJ5DG2c8OOOfbwSwBViwhHF06yEqZf0G)|
-| debussy_cc_1.wav | Training | [Listen](https://drive.google.com/open?id=17fyumtCSC1og2rvgmik4mbKMPNHBK3L7) | [Listen](https://drive.google.com/open?id=1Fta2bpK0-6D4pebE2ThkZhZV-d8ANYPK) | [Listen](https://drive.google.com/open?id=1Soybu7DBMlG4YEwnjQGWyQwY1nz5CYmd)|
-| mond_3.wav | Training | [Listen](https://drive.google.com/open?id=1gEWUmFas2Hvr0aEyEo0H9bKoJINFCNpX) | [Listen](https://drive.google.com/open?id=1dE0GSydg9S_11RTXgBikBFUDGbKOjM4E) | [Listen](https://drive.google.com/open?id=1SHa7mTC_GDO50QLYIIilnHWsfZScvKmL)|
-| schuim-3.wav | Validation | [Listen](https://drive.google.com/open?id=1lPyfKD916xSjYPQrCllJl8J2ir5pRnX9) | [Listen](https://drive.google.com/open?id=116fvUwTUh-8_jdFC7Z-ZIrL__7UEPKqk) | [Listen](https://drive.google.com/open?id=1ajgHG5qydMhvNGb5PGePkIlnOD3OgVKq)|
-| ty_august.wav | Validation | [Listen](https://drive.google.com/open?id=1J0fdHTbFtkdArBwKArVJ4V72MR_IZlHO) | [Listen](https://drive.google.com/open?id=12QMyBx-1kCrVl0Hg4Yycx8SDQPnupS7S) | [Listen](https://drive.google.com/open?id=1TATbXKE5E24DU7WJtI4bcjepHda_dSG8)|
-
-#### keyboard_acoustic_2_synth_lead_synthetic
-
-| Sample name | Set | Input | Output | Target |
-| --- | --- | --- | --- | --- |
-| appass_3.wav | Training | [Listen](https://drive.google.com/open?id=1gmQ8V9wFbAUAV5AM8QkxqoxOVLPbUfw8) | [Listen](https://drive.google.com/open?id=1jtQx_Fr9uZUlsf5pcMaiYsBXJ8ApdVzo) | [Listen](https://drive.google.com/open?id=19X7YbbL-6shckopKduCAC78uJJjdCGNq)|
-| burg_gewitter.wav | Training | [Listen](https://drive.google.com/open?id=15rYy8qL_gp3rLF_4fm-QRuih3MTCofXl) | [Listen](https://drive.google.com/open?id=1S5CA4y0HV5UPCdXd4v5pLM7if1gl8Tod) | [Listen](https://drive.google.com/open?id=1XKu6lsRErd-5BmmlKj3ZjWesw0ONqwTj)|
-| debussy_cc_1.wav | Training | [Listen](https://drive.google.com/open?id=17fyumtCSC1og2rvgmik4mbKMPNHBK3L7) | [Listen](https://drive.google.com/open?id=1JHHusjQ0cXZMAiXVd-52v2bpNiQTl7kA) | [Listen](https://drive.google.com/open?id=1cAVAShk9gm8fnL4R2EzHAqZyGdK5IWdf)|
-| mond_3.wav | Training | [Listen](https://drive.google.com/open?id=1gEWUmFas2Hvr0aEyEo0H9bKoJINFCNpX) | [Listen](https://drive.google.com/open?id=1C1JT2aR13ygUe45-aJQZi2qAF03O44R5) | [Listen](https://drive.google.com/open?id=1THVP1GQGmZqcWVgtclwtHECq-IMK8Qdc)|
-| schuim-3.wav | Validation | [Listen](https://drive.google.com/open?id=1lPyfKD916xSjYPQrCllJl8J2ir5pRnX9) | [Listen](https://drive.google.com/open?id=1yAG47W6iGH0zxZo-3yXCmMVHAYc6w3X1) | [Listen](https://drive.google.com/open?id=1upGPu3nEcFhvRdEOjPvpWLvw0Knn3pKv)|
-| ty_august.wav | Validation | [Listen](https://drive.google.com/open?id=1J0fdHTbFtkdArBwKArVJ4V72MR_IZlHO) | [Listen](https://drive.google.com/open?id=1WASFbuFo_sVxH_IsaslJnzPIyi-UOo68) | [Listen](https://drive.google.com/open?id=1GvPLym-R5XaIcoEpFolHhyZ0PZIh0ClR)|
-
-#### keyboard_acoustic_2_any
-
-| Sample name | Set | Input | Output (guitar), Output (string), Output (synth_lead) | Target (guitar), Target (string), Target (synth_lead) |
-| --- | --- | --- | --- | --- |
-| appass_3.wav | Training | [Listen](https://drive.google.com/open?id=1gmQ8V9wFbAUAV5AM8QkxqoxOVLPbUfw8) | [Listen](https://drive.google.com/open?id=1nddktK-oZS5YSQ4w2IU9ZgDlrFyOqrlt), [Listen](https://drive.google.com/open?id=1CcMVLsAl2vTCHAaJ6BkKNsCybmgVumtU), [Listen](https://drive.google.com/open?id=1PnkAyr2tFWYTahtGJGeuPXbGIdx2JUeE) | [Listen](https://drive.google.com/open?id=1SQxxC2dRu91mx73j8MSMERIgUnx7kVsl), [Listen](https://drive.google.com/open?id=1N9fPbd5Zro_jNDD6JXk-WTC6wBbd97zY), [Listen](https://drive.google.com/open?id=19X7YbbL-6shckopKduCAC78uJJjdCGNq)|
-| burg_gewitter.wav | Training | [Listen](https://drive.google.com/open?id=15rYy8qL_gp3rLF_4fm-QRuih3MTCofXl) | [Listen](https://drive.google.com/open?id=11tagVfALUJOMi_-cNlAtAtqUCI2Ql6o1), [Listen](https://drive.google.com/open?id=1qAjq8gwxghOCynwq2InvaKm4hvIZ93Ck), [Listen](https://drive.google.com/open?id=1KA1odUALNfFuluXoHOXuNhsofKdkTHQu) | [Listen](https://drive.google.com/open?id=1IYVbk7IyixIiH0uFRrw_S_ZrmXjIuC1R), [Listen](https://drive.google.com/open?id=1vJ5DG2c8OOOfbwSwBViwhHF06yEqZf0G), [Listen](https://drive.google.com/open?id=1XKu6lsRErd-5BmmlKj3ZjWesw0ONqwTj)|
-| debussy_cc_1.wav | Training | [Listen](https://drive.google.com/open?id=17fyumtCSC1og2rvgmik4mbKMPNHBK3L7) | [Listen](https://drive.google.com/open?id=1_iAqC_DEXhaTN8xc5qjf0XAlRSRTES2l), [Listen](https://drive.google.com/open?id=15c1WcyA8cGiZ7WcRncOeLO_VGFR1jFii), [Listen](https://drive.google.com/open?id=1sTQpcpiceJcfo7Jv22IuPF8Heu5iblmS) | [Listen](https://drive.google.com/open?id=1UFg2Ac9Rd7GO7tsFEmlVfMUspMebEhm0), [Listen](https://drive.google.com/open?id=1Soybu7DBMlG4YEwnjQGWyQwY1nz5CYmd), [Listen](https://drive.google.com/open?id=1cAVAShk9gm8fnL4R2EzHAqZyGdK5IWdf)|
-| mond_3.wav | Training | [Listen](https://drive.google.com/open?id=1gEWUmFas2Hvr0aEyEo0H9bKoJINFCNpX) | [Listen](https://drive.google.com/open?id=1Ve3iHWHx8MxtUsgOgY6URqBtTj5v6JEK), [Listen](https://drive.google.com/open?id=1px4Zwbl3kWaPwUAQgO7aSdxct6fMSxRl), [Listen](https://drive.google.com/open?id=16unhYFf4yiS8IHpjkIyKku1LHpWB-2B6) | [Listen](https://drive.google.com/open?id=1rQb34Ok4O_lv7cQuuy1pZeoYIQnbT8zj), [Listen](https://drive.google.com/open?id=1SHa7mTC_GDO50QLYIIilnHWsfZScvKmL), [Listen](https://drive.google.com/open?id=1THVP1GQGmZqcWVgtclwtHECq-IMK8Qdc)|
-| schuim-3.wav | Validation | [Listen](https://drive.google.com/open?id=1lPyfKD916xSjYPQrCllJl8J2ir5pRnX9) | [Listen](https://drive.google.com/open?id=1q5PwNpLO2QHcwEouklHofw3VGCbuIJ20), [Listen](https://drive.google.com/open?id=1HC87fpM3tvs8pIYR6vs1uiBGBN2cepd-), [Listen](https://drive.google.com/open?id=1lbZSqWg1tHEtP3zApx78HBT3tJj5oN97) | [Listen](https://drive.google.com/open?id=1UUtlogIO8Da5z5a-hr7mTe6ROcR5-qT5), [Listen](https://drive.google.com/open?id=1ajgHG5qydMhvNGb5PGePkIlnOD3OgVKq), [Listen](https://drive.google.com/open?id=1upGPu3nEcFhvRdEOjPvpWLvw0Knn3pKv)|
-| ty_august.wav | Validation | [Listen](https://drive.google.com/open?id=1J0fdHTbFtkdArBwKArVJ4V72MR_IZlHO) | [Listen](https://drive.google.com/open?id=1QnYmmmlqjX7y-ECweMZKSn_rDwmEz-mo), [Listen](https://drive.google.com/open?id=1x_EpVm3c9XRJVuz8fKmUcqXSJhW9vcxj), [Listen](https://drive.google.com/open?id=1VAR78skrSS_GCRS0hspTG9uQV9hmJy2E) | [Listen](https://drive.google.com/open?id=1RArFTlrJxr4dYpyi8U8HXf_lasMAgG11), [Listen](https://drive.google.com/open?id=1TATbXKE5E24DU7WJtI4bcjepHda_dSG8), [Listen](https://drive.google.com/open?id=1GvPLym-R5XaIcoEpFolHhyZ0PZIh0ClR)|
-
-### Audios from the real world
-
->NOTE: Again, it is highly recommended to donwload the ``real_world_results`` folder from [this Google Drive link](https://drive.google.com/open?id=1jn5wWAwVl6YVnJ1idR9NvtdXe48TNReT) to get all the audios at once. 
-
-Since the audios presented here are real world recordings, there is no target audio to compare with the output. Therefore, this section is intended entirely for subjective evaluation. In this case, the entire piece has been exported instead of 10 second excerpts to allow the listener to check the audio quality in different parts of the piece.
-
-| Sample name | Length | Input | Output (guitar) | Output (string) | Output (synth_lead) |
-| --- | --- | --- | --- | --- | --- |
-| Chopin - Nocturne.mp3 | 04:13 | [Listen](https://drive.google.com/open?id=1oVUVL-kBQhf7c2qEvU7yLsZUoJ-XndUB) | [Listen](https://drive.google.com/open?id=1_kilFAc1XyWEbPP-upUciu0PXLzHOdsS) | [Listen](https://drive.google.com/open?id=10lD0YNaRVmuRq5QEhytYkd-BnlKHte8u) | [Listen](https://drive.google.com/open?id=1HM0L-ktMEsH-SgAbDY0uPDIGUKgWei0R) | 
-| Pachelbel Canon in D - Solo Piano.mp3 | 03:22 | [Listen](https://drive.google.com/open?id=1HJ6ndxh2bj4E9gpiC-dZ8otrJi7O-nvm) | [Listen](https://drive.google.com/open?id=1GJOcbI4bwWREh4XN4iuIpwK5ZRtn6NJm) | [Listen](https://drive.google.com/open?id=19ZXd1Q6Dw1ZsvdUiEyOrJVMhZMTJeplO) | [Listen](https://drive.google.com/open?id=1TLZrIWIt3BA6XJ9ljo8QkuE9-c6JmtOI) | 
-| Sunrise In Meteora - Piano Solo.mp3 | 03:52 | [Listen](https://drive.google.com/open?id=1dPXEAufdOBEb4mCiHRJeuJ3siMGrN8Zy) | [Listen](https://drive.google.com/open?id=1pRY0ufwa_hqYvEV7BR201gAOEEWgaMRT) | [Listen](https://drive.google.com/open?id=1g8VwN3NoMvSGO0RyV61pkiag4Ssx6lDb) | [Listen](https://drive.google.com/open?id=1UMQn60_vcR0_6Kz9RQ3LFkDFMwUHK2lv) | 
-| Sweet Memories - Piano Solo.mp3 | 03:34 | [Listen](https://drive.google.com/open?id=1JvxbMdfP6sRPitFTvl6n46PXjdRLyrTb) | [Listen](https://drive.google.com/open?id=1qtk4GqOO0ELuFj5VR_2rWbCS1l_Lo8Za) | [Listen](https://drive.google.com/open?id=1NLfxx2qYLiYPE0oSTI8sHkXurXGuvI8J) | [Listen](https://drive.google.com/open?id=1BKMM42w_Qk01MwaBRfdOGE2bOi-Ux2kE) | 
-
-### Trained models
-
-The ``/models`` folder of this repository contains the training history and the learning rate search results in separate directories for each instrument pair.
-
-Since the weights of the trained models are too large for the Github repository, [this alternative link to Google Drive](https://drive.google.com/open?id=1baKYIA3uurrXkh1V0-fMWkgvW4iEWJh8) is provided. 
-
-Individual models
-* [keyboard_acoustic_2_guitar_acoustic](https://drive.google.com/open?id=1wD9jHDkwMSaPQeCpM6UxnOQfh-C52pI0)
-* [keyboard_acoustic_2_string_acoustic](https://drive.google.com/open?id=1TUMI0NK9hP26BqiQUAqNa7woHJ23JoME)
-* [keyboard_acoustic_2_synth_lead_synthetic](https://drive.google.com/open?id=1LuriwjzxN3C5SJzeDFZllEOMtjZcUDYf)
-* [keyboard_acousitc_2_any](https://drive.google.com/open?id=15qzaeFJ_vpRqPR_kevyOLIKobWQ6xhqC)
-
-To use a pretrained model simply run the ``predict.py`` script specifying the path to the trained generator model (i.e. .h5 weights file), the location of the input audio and the name of the output audio.
-```
-$ python predict.py --model <GENERATOR_WEIGHTS> 
-                    --input <INPUT_AUDIO>
-                    --output <OUTPUT_AUDIO>
-```
-
-Additionally, in the case of a multitarget model the style must be specified. Run the ``predict_multitarget.py`` script instead.
-```
-$ python predict_multitarget.py --model <GENERATOR_WEIGHTS> 
-                                --input <INPUT_AUDIO>
-                                --style <TARGET_STYLE_AUDIO>
-                                --output <OUTPUT_AUDIO>
-```
 
 # Conclusion 
 >[Table of contents](#table-of-contents)
