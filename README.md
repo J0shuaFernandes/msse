@@ -88,50 +88,6 @@ The dataset has been created using a combination of two publicly available datas
 
 * The NSynth Dataset, “A large-scale and high-quality dataset of annotated musical notes”, Magenta Project (Google AI): https://magenta.tensorflow.org/datasets/nsynth
 
-### Alternative dataset
-
-The MAESTRO Dataset contains more than 200 hours of music in MIDI format and can be used to generate an even larger collection of synthesized music. Although the resulting size of the synthesized dataset made it impractical for the scope of this project, the author encourages other researchers with more computing resources to try this option as well. 
-
-* The MAESTRO Dataset “MIDI and Audio Edited for Synchronous TRacks and Organization”, Magenta Project (Google AI): https://magenta.tensorflow.org/datasets/maestro
-
-### Audio synthesis
-
-The audios are generated from these 2 datasets by loading the notes from the MIDI file as a sequence of (pitch, velocity, start_time, end_time). Then, the corresponding note from the NSynth dataset is loaded, modified to the note duration, and placed into an audio file. After repeating these two steps for all the notes in the sequence, the piece from the MIDI file is synthesized as illustrated in this diagram:
-<p align="center">
-<img src="docs/NoteSynthesizer_diagram.png" width="650" height="450">
-</p>
-<p align="center">
-Audio synthesizer block diagram. The notes from the MIDI file and the notes from NSynth are combined into a synthesized output audio. 
-</p>
-
-The procedure has been done with all the MIDI files in [Classical Music MIDI](https://www.kaggle.com/soumikrakshit/classical-music-midi) and with the following instruments from [The NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth) in the note quality 0 (Bright):
-* keyboard_acoustic
-* guitar_acoustic
-* string_acoustic
-* synth_lead_synthetic
-
-### Pre/Post processing
-
-The Magnitude Spectrograms are converted from linear domain to logarithmic domain using the function ``amplitude_to_db()`` within the ``data.py`` module, inspired from librosa but adapted to avoid zero-valued regions. The implication of this is that the magnitudes are in decibels (dB), and the distribution of the magnitude values is more similar to how humans hear.  
-
-The minimum magnitude considered to be greater than zero is amin, expressed as the minimum increment of a 16 bit representation (-96 dB).    
-```python
-amin = 1 / (2**16)
-mag_db = 20 * np.log1p(mag / amin)
-mag_db /= 20 * np.log1p(1 / amin) # Normalization
-```
-
-Finally, the range is normalized in [-1,1] instead of [0,1] using the following conversion:
-```python
-mag_db = mag_db * 2 - 1
-```
-
-To recover the audio, the inverse operations must be performed. Denormalize to [0,1], convert from logarithmic to linear using the function ``db_to_amplitude()`` from ``data.py``, and then compute the inverse STFT using ``librosa.istft()`` with the magnitude and the phase estimations. The complex spectrogram and the final audio can be obtained from the magnitude and phase as: 
-```python
-S = mag * np.exp(1j * phase)
-audio = librosa.istft(S,...)
-```
-
 # Training
 >[Table of contents](#table-of-contents)
 
